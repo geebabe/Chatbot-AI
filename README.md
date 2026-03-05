@@ -17,11 +17,17 @@ A real-time AI chat service built with **FastAPI**, the **OpenAI Agents SDK**, a
                                 └──────────────┘
 ```
 
-The service is built around a **streaming-first** architecture using Server-Sent Events (SSE). By leveraging the OpenAI Agents SDK and FastAPI's asynchronous capabilities, the system provides real-time, token-by-token responses to the client. To ensure a smooth user experience, we've implemented interleaved heartbeat events (every 15 seconds) to keep long-running connections alive and prevent intermediate proxy timeouts.
+**Key design decisions:**
 
-Data integrity is prioritized through a strict **persistence strategy**: user messages are committed to the PostgreSQL database *before* the agent begins its work, while assistant replies are persisted only *after* the stream successfully completes. This architectural choice guarantees that user inputs are never lost, even in the event of a mid-stream failure. Furthermore, the application enforces strict **user scoping** by filtering all database queries at the service layer by both `session_id` and `user_id`. This creates a robust multi-tenant boundary where users only have access to their own conversation history.
+- **Streaming-first**: The chat endpoint uses SSE with interleaved heartbeat events (every 15 s) so the connection stays alive and clients get incremental responses token-by-token. This is critical for perceived latency.
+- **Persistence order**: The user message is persisted *before* the agent runs, and the assistant reply is persisted *after* streaming completes. This guarantees that every user input is recorded even if the agent fails mid-stream.
+- **User scoping**: All database queries filter by both `session_id` and `user_id`, so one user cannot access another's sessions — a simple but effective authorization boundary without middleware.
+- **Test isolation**: Tests use an in-memory SQLite database and mock the OpenAI agent, so the full test suite runs in under a second with zero external dependencies.
 
-For development and testing, we opted for **complete isolation**. The test suite uses an in-memory SQLite database and mocks the OpenAI agent services, allowing for lightning-fast execution (under one second) without requiring external API keys or a live database. While `user_id` is currently passed in the request body for simplicity, the system is designed to seamlessly integrate with authentication middleware in a production environment.
+**Trade-offs:**
+
+- `user_id` is passed as a plain string in the request body rather than being extracted from an auth token. This keeps the scope focused but would need auth middleware in production.
+- The heartbeat is implemented at the route level with `asyncio.wait_for` timeout interleaving, which is simple and correct for single-stream use but would need refinement for very high concurrency.
 
 ---
 
