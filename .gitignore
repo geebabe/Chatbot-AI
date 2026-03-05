@@ -1,0 +1,40 @@
+# Environments & Secrets
+.env
+.venv/
+env/
+venv/
+*.env
+# Ignore any docker-specific env files if you have them
+.env.docker
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDEs & Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+.project
+.pydevproject
+.settings/
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Logs & Databases
+*.log
+data/
+db.sqlite3
+db.sqlite3-journal
+
+# Docker
+.dockerignore
